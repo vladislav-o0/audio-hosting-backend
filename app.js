@@ -41,9 +41,9 @@ router.post('/registration', function(req, res) {
     bcrypt.hashSync(req.body.password, 8)
   ],
   function (err) {
-      if (err) return res.status(500).send("There was a problem registering the user.")
+      if (err) return res.status(500).send("Не получилось зарегистрироваться.")
       db.selectByEmail(req.body.email, (err,user) => {
-        if (err) return res.status(500).send("There was a problem getting user")
+        if (err) return res.status(500).send("Не получилось войти.")
         
         let token = jwt.sign(
             { 
@@ -68,7 +68,7 @@ router.post('/login', (req, res) => {
   db.selectByEmail(req.body.email, (err, user) => {
     if (err) return res.status(500).send('Error on the server.');
   
-    if (!user) return res.status(404).send('No user found.');
+    if (!user) return res.status(404).send('Такой пользователь отсутствует.');
     
     let passwordIsValid = bcrypt.compareSync(req.body.password, user.user_pass);
     
@@ -88,52 +88,55 @@ router.post('/login', (req, res) => {
   });
 });
 
-router.get('/auth', (req, res) => {
+function checkToken(req, res, next) {
+  console.dir(req.headers)
   if (req.headers.authorization) {
     jwt.verify(
       req.headers.authorization,
       config.secret,
       (err, payload) => {
-        if (err) return false;
+        if (err) res.status(401).send('Не верный токен');
         else if (payload) {
-          db.selectById(payload.id, (err, user) => {
-            if (err) return res.status(500).send('Error on the server.');      
-            if (!user) return res.status(404).send('No user found.');  
-            res.status(200).send({
-              auth: true,
-              user: user
-            });
-          });
+          req.payload = payload;
+          next();
         }
       }
     );
+  } else {
+    res.status(403).send('Токен отсутствует');
   }
+}
+
+router.get('/auth', checkToken);
+
+router.get('/auth', (req, res) => {
+ 
+  db.selectById(req.payload.id, (err, user) => {
+    if (err) return res.status(500).send('Ошибка на сервере.');      
+    if (!user) return res.status(404).send('Пользователь не найден.');  
+    res.status(200).send({
+      auth: true,
+      user: user
+    });
+  });
+
 });
 
+router.post('/upload', checkToken);
+
 router.post('/upload', upload.any(), (req, res) => {
-  if (req.headers.authorization) {
-    jwt.verify(
-      req.headers.authorization,
-      config.secret,
-      (err, payload) => {
-        if (err) return false;
-        else if (payload) {
           db.insertTrack([
             req.body.author,
             req.body.name,
             req.body.genre,
             `${req.body.author}-${req.body.name}.${req.files[0].originalname.split('.').pop()}`,
-            payload.id
+            req.payload.id
           ],
           function (err) {
-            if (err) return res.status(500).send("There was a problem upload the track.");
+            if (err) return res.status(500).send("Не получилось загрузить трек.");
             res.status(200).send();
-          });
-        }
-      }
-    );
-  }
-})
+          });   
+});
 
 app.use(router)
 let port = process.env.PORT || 3000;
