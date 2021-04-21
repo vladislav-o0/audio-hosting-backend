@@ -67,5 +67,12 @@ class Db {
           callback(err)
       })
   }
+  removeTrack(src, callback) {
+    return this.db.run(
+      'DELETE FROM tracks WHERE src = ?',
+      src, (err) => {
+          callback(err)
+      })
+  }
 }
 module.exports = Db

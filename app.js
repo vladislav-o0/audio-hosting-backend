@@ -1,5 +1,6 @@
 "use strict";
 const express = require('express');
+const fs = require("fs");
 const DB = require('./db');
 const config = require('./config');
 const bcrypt = require('bcrypt');
@@ -38,7 +39,7 @@ router.get('/getTracks', (req, res) => {
   db.selectAllTrack((err, tracks) => {
     if (err) return res.status(500).send('Error on the server.');
     if (!tracks.length) return res.status(404).send('Аудиозаписи отсутствуют.');
-    console.log(tracks);
+
     res.status(200).send(tracks);
   });
 });
@@ -62,7 +63,6 @@ router.post('/registration', function(req, res) {
             {
               expiresIn: 86400
             });
-        console.dir(user)
         res.status(200).send(
           { 
             auth: true, 
@@ -96,7 +96,6 @@ router.post('/login', (req, res) => {
 });
 
 function checkToken(req, res, next) {
-  console.dir(req.headers)
   if (req.headers.authorization) {
     jwt.verify(
       req.headers.authorization,
@@ -132,17 +131,36 @@ router.get('/auth', (req, res) => {
 router.post('/upload', checkToken);
 
 router.post('/upload', upload.any(), (req, res) => {
-          db.insertTrack([
-            req.body.author,
-            req.body.name,
-            req.body.genre,
-            `${req.body.author}-${req.body.name}.${req.files[0].originalname.split('.').pop()}`,
-            req.payload.id
-          ],
-          function (err) {
-            if (err) return res.status(500).send("Не получилось загрузить трек.");
-            res.status(200).send();
-          });   
+    db.insertTrack([
+      req.body.author,
+      req.body.name,
+      req.body.genre,
+      `${req.body.author}-${req.body.name}.${req.files[0].originalname.split('.').pop()}`,
+      req.payload.id
+    ],
+    function (err) {
+      if (err) return res.status(500).send("Не получилось загрузить трек.");
+      res.status(200).send();
+    });   
+});
+
+router.post('/removeTrack', (req, res) => {
+  console.log(req.body)
+  console.log('--------------------------')
+  db.removeTrack([
+    req.body.src
+  ],
+  function (err) {
+    if (err) return res.status(500).send("Не получилось удалить трек.");
+    fs.unlink('./uploads/' + req.body.src, (err) => {
+      if (err) {
+        console.error(err);
+        res.status(500).send("Не получилось удалить трек.");
+      }
+      console.log("File removed");
+      res.status(200).send();
+    });
+  });   
 });
 
 app.use(router)
