@@ -144,9 +144,11 @@ router.post('/upload', upload.any(), (req, res) => {
     });   
 });
 
+router.post('/removeTrack', checkToken);
+
 router.post('/removeTrack', (req, res) => {
-  console.log(req.body)
-  console.log('--------------------------')
+  if (req.payload.id != req.body.user_id) res.status(500).send("Нет прав на удалене.");
+
   db.removeTrack([
     req.body.src
   ],
