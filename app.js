@@ -34,6 +34,15 @@ app.use(allowCrossDomain);
 
 app.use(express.static('uploads'));
 
+router.get('/getTracks', (req, res) => {
+  db.selectAllTrack((err, tracks) => {
+    if (err) return res.status(500).send('Error on the server.');
+    if (!tracks.length) return res.status(404).send('Аудиозаписи отсутствуют.');
+    console.log(tracks);
+    res.status(200).send(tracks);
+  });
+});
+
 router.post('/registration', function(req, res) {
   db.insertUser([
     req.body.name,
@@ -67,11 +76,9 @@ router.post('/registration', function(req, res) {
 router.post('/login', (req, res) => {
   db.selectByEmail(req.body.email, (err, user) => {
     if (err) return res.status(500).send('Error on the server.');
-  
     if (!user) return res.status(404).send('Такой пользователь отсутствует.');
     
     let passwordIsValid = bcrypt.compareSync(req.body.password, user.user_pass);
-    
     if (!passwordIsValid) return res.status(401).send({ auth: false, token: null });
     
     let token = jwt.sign(

@@ -40,6 +40,14 @@ class Db {
           callback(err,row)
       })
   }
+
+  selectAllTrack(callback) {
+    return this.db.all(
+      `SELECT * FROM tracks`, function(err,rows){
+          callback(err,rows)
+      })
+  }
+
   selectAll(callback) {
     return this.db.all(`SELECT * FROM user`, function(err,rows){
       callback(err,rows)
