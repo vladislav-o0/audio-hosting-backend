@@ -67,7 +67,11 @@ router.post('/registration', function(req, res) {
           { 
             auth: true, 
             token: token, 
-            user: user 
+            user: {
+              name: user.name,
+              email: user.email,
+              id: user.id
+            } 
           });
       }); 
   }); 
@@ -90,7 +94,11 @@ router.post('/login', (req, res) => {
     res.status(200).send({
       auth: true,
       token: token,
-      user: user
+      user: {
+        name: user.name,
+        email: user.email,
+        id: user.id
+      }
     });
   });
 });
